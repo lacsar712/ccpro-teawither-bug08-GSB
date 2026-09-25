@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import ProtectedError
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
@@ -87,15 +88,34 @@ class GardenDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "gardens/confirm_delete.html"
     success_url = reverse_lazy("garden_list")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["trough_count"] = self.object.troughs.count()
+        return context
+
     def form_valid(self, form):
-        # BUG: 先删后「检查」——有槽也被 SET_NULL 删掉园
-        obj = self.object
-        messages.success(self.request, "茶园已删除")
-        resp = super().form_valid(form)
-        # 假检查：删完才看 troughs（永远空）
-        if obj.troughs.exists():
-            messages.error(self.request, "仍有槽，应拦截")
-        return resp
+        # 先检查后删除：仍有槽位的茶园一律拒删，数据保持完整
+        trough_count = self.object.troughs.count()
+        if trough_count:
+            messages.error(
+                self.request,
+                f"无法删除茶园「{self.object.name}」："
+                f"该茶园下仍有 {trough_count} 个萎凋槽，请先删除或转移这些槽位。",
+            )
+            return redirect("garden_list")
+        try:
+            response = super().form_valid(form)
+        except ProtectedError:
+            # 并发兜底：检查与删除之间又有新槽位挂到该茶园
+            messages.error(
+                self.request,
+                f"无法删除茶园「{self.object.name}」："
+                "该茶园下仍有萎凋槽，请先删除或转移这些槽位。",
+            )
+            return redirect("garden_list")
+        # 确实删掉了才报成功
+        messages.success(self.request, f"茶园「{self.object.name}」已删除")
+        return response
 
 
 # ---- Trough ----

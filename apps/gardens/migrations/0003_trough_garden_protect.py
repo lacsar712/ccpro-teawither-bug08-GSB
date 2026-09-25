@@ -1,0 +1,24 @@
+import django.db.models.deletion
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ("gardens", "0002_trough_garden_set_null"),
+    ]
+
+    operations = [
+        migrations.AlterField(
+            model_name="trough",
+            name="garden",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="troughs",
+                to="gardens.garden",
+                verbose_name="茶园",
+            ),
+        ),
+    ]

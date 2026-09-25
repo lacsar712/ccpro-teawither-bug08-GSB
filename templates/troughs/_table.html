@@ -13,8 +13,7 @@
   <tbody>
     {% for t in troughs %}
     <tr>
-      <!-- BUG: 假定 garden 必有，SET_NULL 后炸 -->
-      <td>{{ t.garden.name }}</td>
+      <td>{% if t.garden %}{{ t.garden.name }}{% else %}<span class="muted">（茶园已删除）</span>{% endif %}</td>
       <td>{{ t.troughCode }}</td>
       <td>{{ t.cultivar }}</td>
       <td>{{ t.loadKg }}</td>

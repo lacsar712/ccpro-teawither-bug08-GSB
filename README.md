@@ -54,7 +54,10 @@ python manage.py runserver 0.0.0.0:4100
 2. **Trough（萎凋槽）**：归属茶园、`troughCode`、`cultivar`、`loadKg`、状态 `loading|withering|ready`；同一茶园内槽位编号唯一
 3. **WitherBatch（萎凋批次）**：归属槽位、`startedAt`、`targetMoisture`、`actualMoisture`（可空）、`rollGrade`
 
-**业务规则**：将槽位状态设为 `ready`（可下槽）时，若最新批次的 `actualMoisture` 为空或大于 40，抛出中文 `ValidationError`。
+**业务规则**：
+
+1. 将槽位状态设为 `ready`（可下槽）时，若最新批次的 `actualMoisture` 为空或大于 40，抛出中文 `ValidationError`。
+2. 删除茶园时，若其下仍有萎凋槽则拒绝删除（`on_delete=PROTECT`，ORM/数据库层面兜底，非仅界面提示），数据保持完整；无槽茶园才可真正删除。历史遗留的无茶园槽位（`garden` 为空）在列表中显示为「（茶园已删除）」。
 
 ## 种子数据
 
