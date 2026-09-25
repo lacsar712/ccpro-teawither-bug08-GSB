@@ -4,6 +4,7 @@
     <tr>
       <th>名称</th>
       <th>海拔带</th>
+      <th>槽数</th>
       <th>备注</th>
       <th>操作</th>
     </tr>
@@ -13,6 +14,7 @@
     <tr>
       <td>{{ g.name }}</td>
       <td>{{ g.altitudeBand }}</td>
+      <td>{{ g.trough_count }}</td>
       <td>{{ g.notes|default:"—" }}</td>
       <td class="actions">
         <a class="btn btn-sm btn-secondary" href="{% url 'garden_edit' g.pk %}">编辑</a>

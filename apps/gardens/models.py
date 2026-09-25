@@ -28,7 +28,10 @@ class Trough(models.Model):
 
     garden = models.ForeignKey(
         Garden,
-        on_delete=models.SET_NULL,
+        # PROTECT:有槽的茶园在模型层即拒绝删除,杜绝 SET_NULL 制造孤儿槽。
+        # 保留 null=True/blank=True 仅为兼容历史脏数据(已存在的空茶园槽),
+        # 新数据由表单层强制必填。
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="troughs",
@@ -56,7 +59,9 @@ class Trough(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.garden.name}-{self.troughCode}"
+        # 历史脏数据可能 garden=None,取关联名时须兜底,避免列表/下拉渲染炸掉
+        garden_name = self.garden.name if self.garden_id else "未关联茶园"
+        return f"{garden_name}-{self.troughCode}"
 
     def latest_batch(self):
         return self.batches.order_by("-startedAt", "-id").first()

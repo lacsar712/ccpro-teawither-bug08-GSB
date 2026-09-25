@@ -13,7 +13,7 @@
   <tbody>
     {% for b in batches %}
     <tr>
-      <td>{{ b.trough.garden.name }} / {{ b.trough.troughCode }}</td>
+      <td>{% if b.trough.garden_id %}{{ b.trough.garden.name }}{% else %}<span class="empty" title="历史数据:该槽未关联茶园">未关联茶园</span>{% endif %} / {{ b.trough.troughCode }}</td>
       <td>{{ b.startedAt|date:"Y-m-d H:i" }}</td>
       <td>{{ b.targetMoisture }}%</td>
       <td>{% if b.actualMoisture != None %}{{ b.actualMoisture }}%{% else %}—{% endif %}</td>

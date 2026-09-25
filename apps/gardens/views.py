@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count
+from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
@@ -45,6 +47,9 @@ class GardenListView(LoginRequiredMixin, ListView):
     template_name = "gardens/list.html"
     context_object_name = "gardens"
 
+    def get_queryset(self):
+        return Garden.objects.annotate(trough_count=Count("troughs"))
+
     def get(self, request, *args, **kwargs):
         self.object_list = self.get_queryset()
         if _wants_htmx(request):
@@ -87,15 +92,33 @@ class GardenDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "gardens/confirm_delete.html"
     success_url = reverse_lazy("garden_list")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["trough_count"] = self.object.troughs.count()
+        return context
+
     def form_valid(self, form):
-        # BUG: 先删后「检查」——有槽也被 SET_NULL 删掉园
         obj = self.object
+        # 先查后删:有槽必拒删,数据保持原样
+        trough_count = obj.troughs.count()
+        if trough_count:
+            messages.error(
+                self.request,
+                f"茶园「{obj.name}」下仍有 {trough_count} 个萎凋槽，无法删除；"
+                "请先在萎凋槽列表中删除或移走这些槽位。",
+            )
+            return redirect("garden_list")
+        try:
+            response = super().form_valid(form)
+        except ProtectedError:
+            # 兜底:并发下检查后又有新槽挂到该园,模型层 PROTECT 拦截
+            messages.error(
+                self.request,
+                f"茶园「{obj.name}」仍被萎凋槽引用，无法删除。",
+            )
+            return redirect("garden_list")
         messages.success(self.request, "茶园已删除")
-        resp = super().form_valid(form)
-        # 假检查：删完才看 troughs（永远空）
-        if obj.troughs.exists():
-            messages.error(self.request, "仍有槽，应拦截")
-        return resp
+        return response
 
 
 # ---- Trough ----

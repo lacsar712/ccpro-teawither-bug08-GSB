@@ -26,6 +26,12 @@ class TroughForm(forms.ModelForm):
             "status": forms.Select(attrs={"class": "input"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 模型层 garden 可空仅为兼容历史脏数据;
+        # 界面上新建/编辑槽位必须归属茶园,不再产生新的孤儿槽
+        self.fields["garden"].required = True
+
 
 class WitherBatchForm(forms.ModelForm):
     class Meta:
